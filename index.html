@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Web Bomb FullScreen</title>
+    <title>Web Bomb Ultra-Wide</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        /* On supprime toutes les marges pour coller aux bords de la PSG1 */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        /* On force la suppression de TOUTES les marges du navigateur */
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            width: 100%; 
+            height: 100%; 
             background: #000; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            width: 100vw;
-            overflow: hidden; 
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        /* Le canvas prend 100% de la largeur/hauteur disponible */
+
+        /* Le canvas s'étire au maximum de l'écran sans garder de bordure */
         canvas { 
             display: block;
-            image-rendering: pixelated; 
-            width: 100vw; 
-            height: 100vw; 
-            max-width: 100vh;
-            max-height: 100vh;
-            border: none; /* On enlève le contour rouge pour le plein écran */
+            width: 100vw;   /* 100% de la largeur de vue */
+            height: 100vh;  /* 100% de la hauteur de vue */
+            image-rendering: pixelated; /* Garde les pixels bien nets */
+            object-fit: fill; /* Force l'étirement si l'écran n'est pas un carré parfait */
         }
     </style>
 </head>
@@ -36,18 +36,17 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // On adapte la résolution interne au carré parfait de la console
-        const size = 240;
-        canvas.width = size;
-        canvas.height = size;
+        // On définit une résolution interne fixe (240x240) 
+        // Le CSS se chargera de l'étirer pour remplir l'écran de la PSG1
+        canvas.width = 240;
+        canvas.height = 240;
 
-        const GRID_COUNT = 11; // Nombre de cases (impair pour le style Bomberman)
-        const TILE = size / GRID_COUNT;
+        const GRID_COUNT = 11; 
+        const TILE = 240 / GRID_COUNT;
         
         let player = { x: 1, y: 1 };
         let bombs = [];
 
-        // Carte optimisée pour l'écran 240x240
         const grid = [
             [1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,1],
@@ -63,41 +62,39 @@
         ];
 
         function draw() {
-            ctx.fillStyle = "#1a1a1a"; // Fond gris très foncé
-            ctx.fillRect(0, 0, size, size);
+            ctx.fillStyle = "#111";
+            ctx.fillRect(0, 0, 240, 240);
 
             for(let y=0; y<GRID_COUNT; y++) {
                 for(let x=0; x<GRID_COUNT; x++) {
                     if(grid[y][x] === 1) {
-                        ctx.fillStyle = "#444"; // Murs
+                        ctx.fillStyle = "#333";
                         ctx.fillRect(x*TILE, y*TILE, TILE, TILE);
-                        ctx.strokeStyle = "#222";
+                        ctx.strokeStyle = "#000";
                         ctx.strokeRect(x*TILE, y*TILE, TILE, TILE);
                     }
                 }
             }
 
-            // Bombes
-            ctx.fillStyle = "#fff";
             bombs.forEach(b => {
+                ctx.fillStyle = "#fff";
                 ctx.beginPath();
                 ctx.arc(b.x*TILE + TILE/2, b.y*TILE + TILE/2, TILE/3, 0, Math.PI*2);
                 ctx.fill();
             });
 
-            // Joueur (On le fait briller en vert Solana !)
-            ctx.fillStyle = "#00ffa3";
-            ctx.fillRect(player.x*TILE + 4, player.y*TILE + 4, TILE-8, TILE-8);
+            ctx.fillStyle = "#00ffa3"; // Couleur Solana
+            ctx.fillRect(player.x*TILE + 2, player.y*TILE + 2, TILE-4, TILE-4);
         }
 
         function update() {
             const gp = navigator.getGamepads()[0];
             if (gp) {
-                // Seuil de sensibilité pour éviter les mouvements trop brusques
-                if (gp.buttons[12].pressed && grid[Math.round(player.y-1)][player.x] === 0) player.y--; 
-                if (gp.buttons[13].pressed && grid[Math.round(player.y+1)][player.x] === 0) player.y++;
-                if (gp.buttons[14].pressed && grid[player.y][Math.round(player.x-1)] === 0) player.x--;
-                if (gp.buttons[15].pressed && grid[player.y][Math.round(player.x+1)] === 0) player.x++;
+                // Utilisation des boutons de la croix directionnelle (D-Pad)
+                if (gp.buttons[12].pressed && grid[player.y-1][player.x] === 0) player.y--; 
+                if (gp.buttons[13].pressed && grid[player.y+1][player.x] === 0) player.y++;
+                if (gp.buttons[14].pressed && grid[player.y][player.x-1] === 0) player.x--;
+                if (gp.buttons[15].pressed && grid[player.y][player.x+1] === 0) player.x++;
                 
                 if (gp.buttons[0].pressed) { // Bouton A
                     if (!bombs.find(b => b.x === player.x && b.y === player.y)) {
@@ -106,7 +103,7 @@
                 }
             }
             draw();
-            setTimeout(() => requestAnimationFrame(update), 130);
+            setTimeout(() => requestAnimationFrame(update), 110);
         }
         update();
     </script>
