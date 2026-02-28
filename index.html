@@ -2,25 +2,113 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Web Bomb - PSG1 Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Web Bomb FullScreen</title>
+    <link rel="manifest" href="manifest.json">
     <style>
-        body { margin: 0; background: #000; color: #fff; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        #canvas-container { position: relative; width: 100vw; height: 100vw; max-width: 500px; max-height: 500px; }
-        canvas { width: 100%; height: 100%; image-rendering: pixelated; border: 2px solid #e74c3c; }
-        #ui { position: absolute; top: 0; width: 100%; display: flex; justify-content: space-between; padding: 5px; font-family: monospace; font-size: 10px; background: rgba(0,0,0,0.5); }
+        /* On supprime toutes les marges pour coller aux bords de la PSG1 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #000; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            width: 100vw;
+            overflow: hidden; 
+        }
+        /* Le canvas prend 100% de la largeur/hauteur disponible */
+        canvas { 
+            display: block;
+            image-rendering: pixelated; 
+            width: 100vw; 
+            height: 100vw; 
+            max-width: 100vh;
+            max-height: 100vh;
+            border: none; /* On enlève le contour rouge pour le plein écran */
+        }
     </style>
 </head>
 <body>
-    <div id="ui">
-        <div id="player-status">DÉCONNECTÉ</div>
-        <div id="wallet-addr">---</div>
-    </div>
-    <div id="canvas-container">
-        <canvas id="gameCanvas" width="240" height="240"></canvas>
-    </div>
+    <canvas id="gameCanvas"></canvas>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
-    <script src="game.js"></script>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // On adapte la résolution interne au carré parfait de la console
+        const size = 240;
+        canvas.width = size;
+        canvas.height = size;
+
+        const GRID_COUNT = 11; // Nombre de cases (impair pour le style Bomberman)
+        const TILE = size / GRID_COUNT;
+        
+        let player = { x: 1, y: 1 };
+        let bombs = [];
+
+        // Carte optimisée pour l'écran 240x240
+        const grid = [
+            [1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,0,1,0,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,0,1,0,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,0,1,0,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,0,1,0,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        function draw() {
+            ctx.fillStyle = "#1a1a1a"; // Fond gris très foncé
+            ctx.fillRect(0, 0, size, size);
+
+            for(let y=0; y<GRID_COUNT; y++) {
+                for(let x=0; x<GRID_COUNT; x++) {
+                    if(grid[y][x] === 1) {
+                        ctx.fillStyle = "#444"; // Murs
+                        ctx.fillRect(x*TILE, y*TILE, TILE, TILE);
+                        ctx.strokeStyle = "#222";
+                        ctx.strokeRect(x*TILE, y*TILE, TILE, TILE);
+                    }
+                }
+            }
+
+            // Bombes
+            ctx.fillStyle = "#fff";
+            bombs.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.x*TILE + TILE/2, b.y*TILE + TILE/2, TILE/3, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            // Joueur (On le fait briller en vert Solana !)
+            ctx.fillStyle = "#00ffa3";
+            ctx.fillRect(player.x*TILE + 4, player.y*TILE + 4, TILE-8, TILE-8);
+        }
+
+        function update() {
+            const gp = navigator.getGamepads()[0];
+            if (gp) {
+                // Seuil de sensibilité pour éviter les mouvements trop brusques
+                if (gp.buttons[12].pressed && grid[Math.round(player.y-1)][player.x] === 0) player.y--; 
+                if (gp.buttons[13].pressed && grid[Math.round(player.y+1)][player.x] === 0) player.y++;
+                if (gp.buttons[14].pressed && grid[player.y][Math.round(player.x-1)] === 0) player.x--;
+                if (gp.buttons[15].pressed && grid[player.y][Math.round(player.x+1)] === 0) player.x++;
+                
+                if (gp.buttons[0].pressed) { // Bouton A
+                    if (!bombs.find(b => b.x === player.x && b.y === player.y)) {
+                        bombs.push({x: player.x, y: player.y});
+                    }
+                }
+            }
+            draw();
+            setTimeout(() => requestAnimationFrame(update), 130);
+        }
+        update();
+    </script>
 </body>
 </html>
