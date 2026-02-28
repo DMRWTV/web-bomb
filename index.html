@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Web Bomb - PSG1 Edition</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        #canvas-container { position: relative; width: 100vw; height: 100vw; max-width: 500px; max-height: 500px; }
+        canvas { width: 100%; height: 100%; image-rendering: pixelated; border: 2px solid #e74c3c; }
+        #ui { position: absolute; top: 0; width: 100%; display: flex; justify-content: space-between; padding: 5px; font-family: monospace; font-size: 10px; background: rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="player-status">DÉCONNECTÉ</div>
+        <div id="wallet-addr">---</div>
+    </div>
+    <div id="canvas-container">
+        <canvas id="gameCanvas" width="240" height="240"></canvas>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
