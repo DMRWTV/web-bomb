@@ -3,16 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Web Bomb Hero - PSG1</title>
+    <title>Web Bomb NFT Edition</title>
     <style>
         * { margin: 0; padding: 0; }
         body { background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; }
-        canvas { image-rendering: pixelated; width: 100vw; height: 100vh; object-fit: contain; }
-        #ui { position: absolute; top: 20px; left: 20px; color: #00ffa3; font-size: 24px; text-shadow: 2px 2px #000; }
+        canvas { 
+            /* Cette ligne est MAGIQUE pour le Pixel Art net : */
+            image-rendering: pixelated; 
+            image-rendering: crisp-edges;
+            
+            width: 100vw; height: 100vh; object-fit: contain; 
+        }
+        #ui { position: absolute; top: 20px; left: 20px; color: #00ffa3; font-size: 24px; text-shadow: 2px 2px #000; pointer-events: none; }
     </style>
 </head>
 <body>
-    <div id="ui">SCORE: <span id="score">0</span> SOL</div>
+    <div id="ui">SCORE: <span id="score">0.000</span> SOL</div>
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -32,7 +38,7 @@
         const offsetY = (HEIGHT - (GRID_Y * TILE)) / 2;
 
         let score = 0;
-        let player = { x: 1, y: 1, frame: 0 };
+        let player = { x: 1, y: 1 };
         let bombs = [];
         let explosions = [];
 
@@ -47,37 +53,62 @@
             }
         }
 
-        // --- DESSIN DU PERSONNAGE (PIXEL ART) ---
+        // --- DESSIN DU PERSONNAGE PIXEL ART NFT (16x16) ---
         function drawPlayer(x, y) {
-            const px = x * TILE + offsetX;
-            const py = y * TILE + offsetY;
-            const s = TILE / 10; // Unité de pixel pour le perso
+            ctx.save();
+            ctx.translate(x * TILE + offsetX, y * TILE + offsetY);
+            
+            // On définit la taille d'un "pixel" de notre dessin (TILE/16 = 5px)
+            const p = TILE / 16; 
 
             // Animation de respiration
-            const bounce = Math.sin(Date.now() / 150) * 2;
+            const b = (Math.sin(Date.now() / 200) > 0) ? p : 0;
 
-            // Corps
-            ctx.fillStyle = "#00ffa3"; 
-            ctx.fillRect(px + s*2, py + s*3 + bounce, s*6, s*5); 
-            
-            // Tête
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(px + s*2.5, py + s*1 + bounce, s*5, s*3);
-            
-            // Yeux (visière)
-            ctx.fillStyle = "#000";
-            ctx.fillRect(px + s*3, py + s*2 + bounce, s*4, s*1);
-            
-            // Détail antenne
-            ctx.fillStyle = "#00ffa3";
-            ctx.fillRect(px + s*4.5, py + bounce, s*1, s*1);
+            // Couleurs
+            const COL_MAIN = "#00ffa3"; // Vert Solana
+            const COL_ACCENT = "#fff"; // Blanc
+            const COL_DARK = "#111"; // Noir
 
-            // Pieds
-            ctx.fillStyle = "#555";
-            ctx.fillRect(px + s*2.5, py + s*8, s*2, s*1.5);
-            ctx.fillRect(px + s*5.5, py + s*8, s*2, s*1.5);
+            // --- Matrice de dessin (0=vide, 1=Vert, 2=Blanc, 3=Noir) ---
+            // Un dessin 16x16 fait à la main pour le code
+            const sprite = [
+                [0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0],
+                [0,0,0,0,1,1,2,2,1,1,0,0,0,0,0,0],
+                [0,0,0,1,1,2,2,2,2,1,1,0,0,0,0,0],
+                [0,0,0,1,2,2,3,3,2,2,1,0,0,0,0,0], // Yeux
+                [0,0,0,1,2,3,2,2,3,2,1,0,0,0,0,0], // Yeux
+                [0,0,0,1,2,2,2,2,2,2,1,0,0,0,0,0],
+                [0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0],
+                [0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0], // Cou
+                [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0], // Corps
+                [0,0,1,1,2,1,1,1,1,2,1,1,0,0,0,0],
+                [0,0,1,2,2,2,1,1,2,2,2,1,0,0,0,0],
+                [0,0,1,1,2,1,1,1,1,2,1,1,0,0,0,0],
+                [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
+                [0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0],
+                [0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0], // Jambes
+                [0,0,0,1,1,1,0,0,1,1,1,0,0,0,0,0]  // Pieds
+            ];
+
+            // On dessine la matrice pixel par pixel
+            for (let r = 0; r < 16; r++) {
+                for (let c = 0; c < 16; c++) {
+                    let type = sprite[r][c];
+                    if(type === 0) continue; // Vide
+
+                    if(type === 1) ctx.fillStyle = COL_MAIN;
+                    else if(type === 2) ctx.fillStyle = COL_ACCENT;
+                    else if(type === 3) ctx.fillStyle = COL_DARK;
+                    
+                    // On applique l'animation b (respiration) uniquement à la tête
+                    let finalY = (r < 8) ? r*p + b : r*p;
+                    ctx.fillRect(c*p, finalY, p, p);
+                }
+            }
+            ctx.restore();
         }
 
+        // --- Reste du code (Explosions, Update, etc.) ---
         function explode(bomb) {
             bombs = bombs.filter(b => b !== bomb);
             const dirs = [{x:0,y:0}, {x:1,y:0}, {x:-1,y:0}, {x:0,y:1}, {x:0,y:-1}];
@@ -94,46 +125,47 @@
         }
 
         function draw() {
-            ctx.fillStyle = "#050505";
+            ctx.fillStyle = "#050505"; // Fond sombre
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-            // Dessin des murs et caisses
+            // Murs et Caisses stylisés
             for(let y=0; y<GRID_Y; y++) {
                 for(let x=0; x<GRID_X; x++) {
                     const gx = x * TILE + offsetX;
                     const gy = y * TILE + offsetY;
                     if(grid[y][x] === 1) {
-                        ctx.fillStyle = "#1a1a1a";
+                        ctx.fillStyle = "#1a1a1a"; // Mur dur
                         ctx.fillRect(gx, gy, TILE-2, TILE-2);
-                        ctx.strokeStyle = "#333";
-                        ctx.strokeRect(gx+5, gy+5, TILE-12, TILE-12);
+                        ctx.fillStyle = "#333";
+                        ctx.fillRect(gx+TILE/4, gy+TILE/4, TILE/2, TILE/2); // Centre
                     } else if(grid[y][x] === 2) {
-                        ctx.fillStyle = "#4e342e";
+                        ctx.fillStyle = "#4e342e"; // Caisse
                         ctx.fillRect(gx+4, gy+4, TILE-8, TILE-8);
-                        ctx.fillStyle = "#3e2723";
-                        ctx.fillRect(gx+10, gy+10, TILE-20, TILE-20);
+                        ctx.strokeStyle = "#3e2723";
+                        ctx.strokeRect(gx+10, gy+10, TILE-20, TILE-20); // Contour
                     }
                 }
             }
 
             // Explosions
             explosions = explosions.filter(e => {
-                ctx.fillStyle = `rgba(255, ${100 + Math.random()*155}, 0, ${e.life/15})`;
+                ctx.fillStyle = `rgba(255, ${150 + Math.random()*105}, 0, ${e.life/15})`;
                 ctx.fillRect(e.x*TILE + offsetX, e.y*TILE + offsetY, TILE, TILE);
                 return --e.life > 0;
             });
 
-            // Bombes
-            ctx.fillStyle = (Date.now() % 300 < 150) ? "#ff4757" : "#000";
+            // Bombes clignotantes
+            const blink = (Date.now() % 300 < 150);
+            ctx.fillStyle = blink ? "#ff4757" : "#000";
             bombs.forEach(b => {
                 ctx.beginPath();
                 ctx.arc(b.x*TILE + TILE/2 + offsetX, b.y*TILE + TILE/2 + offsetY, TILE/3, 0, 7);
                 ctx.fill();
-                ctx.strokeStyle = "white";
+                ctx.strokeStyle = blink ? "#fff" : "#ff4757";
                 ctx.stroke();
             });
 
-            // On dessine le personnage à la place du carré
+            // --- APPEL DU NOUVEAU PERSONNAGE ---
             drawPlayer(player.x, player.y);
         }
 
